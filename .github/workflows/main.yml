@@ -1,18 +1,13 @@
-name: Build APK
+name: Build Debug APK
 
 on:
   push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
-  workflow_dispatch:   # allows manual run from Actions tab
+    branches: [ "main", "master" ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: smartclipboard   # important!
 
     steps:
       - name: Checkout repository
@@ -21,30 +16,21 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
           distribution: 'temurin'
-          cache: gradle
+          java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Setup Gradle with Caching (No wrapper needed)
+        uses: gradle/actions/setup-gradle@v4
         with:
-          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
-
-      - name: Create Gradle Wrapper (if missing)
-        run: |
-          if [ ! -f gradlew ]; then
-            echo "gradlew missing — generating wrapper..."
-            gradle wrapper --gradle-version 8.11.1
-          fi
-          chmod +x gradlew
+          gradle-version: '8.11.1'
+          cache-read-only: false
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace --no-daemon
+        working-directory: ./smartclipboard
+        run: gradle assembleDebug --build-cache --configuration-cache
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: ClipVault-Debug-APK
+          name: SmartClipboard-Debug-APK
           path: smartclipboard/app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-          retention-days: 14
