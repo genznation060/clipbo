@@ -14,23 +14,42 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Gradle with Caching (No wrapper needed)
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+          accept-android-sdk-licenses: true
+
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
           cache-read-only: false
 
+      - name: Create local.properties
+        working-directory: ./smartclipboard
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls -la $ANDROID_HOME
+
       - name: Build Debug APK
         working-directory: ./smartclipboard
-        run: gradle assembleDebug --build-cache --configuration-cache
+        run: |
+          gradle assembleDebug \
+            --build-cache \
+            --no-configuration-cache \
+            --stacktrace \
+            --info
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: SmartClipboard-Debug-APK
           path: smartclipboard/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
